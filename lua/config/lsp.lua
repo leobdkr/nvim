@@ -3,7 +3,7 @@
 -- Store known filetypes for lazy loading
 vim.g.known_fts = {
     "go", "rust", "lua", "vimdoc", "zig", "c", "cpp",
-    "javascript", "typescript", "tsx", "astro", "python",
+    "javascript", "typescript", "tsx", "astro", "python", "markdown",
   }
   
   local M = {}
@@ -37,7 +37,14 @@ vim.g.known_fts = {
   local function start_server(bufnr, cmd, settings, init_options, filetypes, root_dir_fn, capabilities)
     local fname = vim.api.nvim_buf_get_name(bufnr)
     local root_dir = root_dir_fn and root_dir_fn(fname) or vim.loop.cwd()
-  
+
+    -- vim.lsp.start throws on a missing binary, which aborts the rest of the
+    -- FileType autocmds (e.g. treesitter indent), so warn instead
+    if vim.fn.executable(cmd[1]) ~= 1 then
+      vim.notify(("LSP not installed: %s"):format(cmd[1]), vim.log.levels.WARN)
+      return
+    end
+
     local ok = vim.lsp.start({
       name = cmd[1],
       cmd = cmd,
@@ -104,10 +111,15 @@ vim.g.known_fts = {
     }, nil, { "python" },
       root_pattern({ "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git" }), capabilities)
   end
-  
+
+  starters.marksman = function(bufnr, capabilities)
+    start_server(bufnr, { "marksman", "server" }, nil, nil, { "markdown" },
+      root_pattern({ ".marksman.toml", ".git" }), capabilities)
+  end
+
   -- Public API: list of servers we manage
   M.GetDefaultServers = function()
-    return { "gopls", "rust_analyzer", "lua_ls", "zls", "clangd", "ts_ls", "astro", "pyright" }
+    return { "gopls", "rust_analyzer", "lua_ls", "zls", "clangd", "ts_ls", "astro", "pyright", "marksman" }
   end
   
   -- Setup: attach autocommands to start servers on matching filetypes
@@ -130,6 +142,7 @@ vim.g.known_fts = {
       javascript = "ts_ls",
       astro = "astro",
       python = "pyright",
+      markdown = "marksman",
     }
   
     for ft, server_name in pairs(ft_to_server) do
