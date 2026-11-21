@@ -16,16 +16,18 @@ return {
         capabilities = capabilities,
       })
   
-      -- Hover UI
-      local width = vim.api.nvim_win_get_width(vim.api.nvim_get_current_win())
-      local maxWidth = math.floor(width * 0.75 + 0.5)
-      vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
-        border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
-        max_width = maxWidth,
-      })
-  
+      -- Hover UI: vim.lsp.buf.hover() ignores vim.lsp.handlers since 0.11,
+      -- so pass the options directly (width is measured per call)
+      local function hover()
+        local width = vim.api.nvim_win_get_width(0)
+        vim.lsp.buf.hover({
+          border = { "╭", "─", "╮", "│", "╯", "─", "╰", "│" },
+          max_width = math.floor(width * 0.75 + 0.5),
+        })
+      end
+
       -- Keymaps
-      vim.keymap.set("n", "<leader>K", vim.lsp.buf.hover)
+      vim.keymap.set("n", "<leader>K", hover)
       vim.keymap.set("n", "<leader>gd", vim.lsp.buf.definition)
       vim.keymap.set("n", "<leader>f", function()
         vim.lsp.buf.format({ async = false })

@@ -4,6 +4,9 @@ return {
     "hrsh7th/nvim-cmp",
     -- Loads plugin on exisiting files or whenever entering insertion mode.
     event = { "BufReadPost", "InsertEnter" },
+    dependencies = {
+        "hrsh7th/cmp-buffer",
+    },
     config = function()
         -- Credit for borders: nvchad/base46
         local cmp = require("cmp")
